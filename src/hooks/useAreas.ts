@@ -12,9 +12,12 @@ import {
 import { db } from "@/lib/firebase";
 import type { Area, AreaWithStats, Customer } from "@/types";
 
+// Global in-memory cache to make page switches 0ms instant
+let memoryAreasCache: AreaWithStats[] | null = null;
+
 export function useAreas() {
-  const [areas, setAreas] = useState<AreaWithStats[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [areas, setAreas] = useState<AreaWithStats[]>(() => memoryAreasCache || []);
+  const [loading, setLoading] = useState<boolean>(() => !memoryAreasCache);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,52 +28,60 @@ export function useAreas() {
       q,
       async (snapshot) => {
         try {
-          const areasWithStats: AreaWithStats[] = await Promise.all(
-            snapshot.docs.map(async (doc) => {
-              const area = { id: doc.id, ...doc.data() } as Area;
-
-              // Fetch customer stats for this area
-              const customersRef = collection(db, "areas", doc.id, "customers");
-              const customerSnap = await getDocs(customersRef);
-              const customers = customerSnap.docs.map(
-                (c) => ({ id: c.id, ...c.data() } as Customer)
-              );
-
-              const paidCount = customers.filter((c) => c.status === "PAID").length;
-              const pendingCount = customers.filter(
-                (c) => c.status === "PENDING" || c.status === "OVERDUE"
-              ).length;
-              const partialCount = customers.filter(
-                (c) => c.status === "PARTIAL"
-              ).length;
-              const targetAmount = customers.reduce(
-                (sum, c) => sum + (c.monthlyFee || 0),
-                0
-              );
-              // Approximate collected: paid customers' full fee + partial customers' partial payments
-              // For now we use the target of paid customers as collected
-              const collectedAmount = customers
-                .filter((c) => c.status === "PAID")
-                .reduce((sum, c) => sum + (c.monthlyFee || 0), 0);
-
-              return {
-                ...area,
-                totalHouses: customers.length,
-                paidCount,
-                pendingCount,
-                partialCount,
-                collectedAmount,
-                targetAmount,
-                progressPercent:
-                  targetAmount > 0
-                    ? Math.round((collectedAmount / targetAmount) * 100)
-                    : 0,
-              };
-            })
+          // 1. Fetch all customers once in a single fast query instead of N separate queries
+          const customersSnap = await getDocs(collection(db, "customers"));
+          const allCustomers = customersSnap.docs.map(
+            (c) => ({ id: c.id, ...c.data() } as Customer)
           );
+
+          // 2. Group customers by areaId in memory (0ms)
+          const customersByArea: Record<string, Customer[]> = {};
+          allCustomers.forEach((c) => {
+            const aId = c.areaId || "";
+            if (!customersByArea[aId]) customersByArea[aId] = [];
+            customersByArea[aId].push(c);
+          });
+
+          // 3. Map areas with instant computed stats
+          const areasWithStats: AreaWithStats[] = snapshot.docs.map((doc) => {
+            const area = { id: doc.id, ...doc.data() } as Area;
+            const areaCustomers = customersByArea[doc.id] || [];
+
+            const paidCount = areaCustomers.filter((c) => c.status === "PAID").length;
+            const pendingCount = areaCustomers.filter(
+              (c) => c.status === "PENDING" || c.status === "OVERDUE"
+            ).length;
+            const partialCount = areaCustomers.filter(
+              (c) => c.status === "PARTIAL"
+            ).length;
+            const targetAmount = areaCustomers.reduce(
+              (sum, c) => sum + (c.monthlyFee || 0),
+              0
+            );
+            const collectedAmount = areaCustomers
+              .filter((c) => c.status === "PAID")
+              .reduce((sum, c) => sum + (c.monthlyFee || 0), 0);
+
+            return {
+              ...area,
+              totalHouses: areaCustomers.length,
+              paidCount,
+              pendingCount,
+              partialCount,
+              collectedAmount,
+              targetAmount,
+              progressPercent:
+                targetAmount > 0
+                  ? Math.round((collectedAmount / targetAmount) * 100)
+                  : 0,
+            };
+          });
+
+          memoryAreasCache = areasWithStats;
           setAreas(areasWithStats);
           setLoading(false);
-        } catch (err) {
+        } catch (err: any) {
+          console.error("Failed to load areas:", err);
           setError("Failed to load areas");
           setLoading(false);
         }

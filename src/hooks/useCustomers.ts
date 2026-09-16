@@ -11,9 +11,14 @@ import {
 import { db } from "@/lib/firebase";
 import type { Customer } from "@/types";
 
+// In-memory cache for instant 0ms tab navigation
+const memoryCustomersCache: Record<string, Customer[]> = {};
+
 export function useCustomers(areaId: string) {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [customers, setCustomers] = useState<Customer[]>(
+    () => (areaId ? memoryCustomersCache[areaId] || [] : [])
+  );
+  const [loading, setLoading] = useState<boolean>(() => (areaId ? !memoryCustomersCache[areaId] : true));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,6 +33,7 @@ export function useCustomers(areaId: string) {
         const data = snapshot.docs.map(
           (doc) => ({ id: doc.id, ...doc.data() } as Customer)
         );
+        memoryCustomersCache[areaId] = data;
         setCustomers(data);
         setLoading(false);
       },

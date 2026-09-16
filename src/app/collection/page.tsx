@@ -43,13 +43,17 @@ function getRecentMonths(count: number = 12): string[] {
   return months;
 }
 
+// Global in-memory cache for instant 0ms tab switching
+let memoryCachedPayments: Payment[] | null = null;
+let memoryCachedCustomers: Customer[] | null = null;
+
 export default function CollectionPage() {
   const { areas } = useAreas();
   const recentMonths = useMemo(() => getRecentMonths(12), []);
   const [selectedMonth, setSelectedMonth] = useState<string>(recentMonths[0]);
-  const [allPayments, setAllPayments] = useState<Payment[]>([]);
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [allPayments, setAllPayments] = useState<Payment[]>(() => memoryCachedPayments || []);
+  const [allCustomers, setAllCustomers] = useState<Customer[]>(() => memoryCachedCustomers || []);
+  const [loading, setLoading] = useState<boolean>(() => !memoryCachedPayments);
   const [methodFilter, setMethodFilter] = useState<"ALL" | "Cash" | "UPI">("ALL");
   const [showQuickCollect, setShowQuickCollect] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -67,6 +71,7 @@ export default function CollectionPage() {
         const list = snapshot.docs.map(
           (doc) => ({ id: doc.id, ...doc.data() } as Payment)
         );
+        memoryCachedPayments = list;
         setAllPayments(list);
         setLoading(false);
       },
@@ -85,6 +90,7 @@ export default function CollectionPage() {
       try {
         const snap = await getDocs(collection(db, "customers"));
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Customer));
+        memoryCachedCustomers = list;
         setAllCustomers(list);
       } catch (err) {
         console.warn("Could not fetch customers:", err);

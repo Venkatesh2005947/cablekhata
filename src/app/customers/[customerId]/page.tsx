@@ -165,11 +165,18 @@ function DeleteModal({
   );
 }
 
+// Global in-memory cache for 0ms instant customer profile opening
+const memoryCustomerMap: Record<string, Customer> = {};
+
 // ─── Main Page ─────────────────────────────────────────────────────
 export default function CustomerProfilePage() {
   const { customerId } = useParams<{ customerId: string }>();
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [customer, setCustomer] = useState<Customer | null>(
+    () => (customerId ? memoryCustomerMap[customerId] || null : null)
+  );
+  const [loading, setLoading] = useState<boolean>(
+    () => (customerId ? !memoryCustomerMap[customerId] : true)
+  );
   const [showMove, setShowMove] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showCollect, setShowCollect] = useState(false);
@@ -183,7 +190,9 @@ export default function CustomerProfilePage() {
     if (!customerId) return;
     const unsub = onSnapshot(doc(db, "customers", customerId), (snap) => {
       if (snap.exists()) {
-        setCustomer({ id: snap.id, ...snap.data() } as Customer);
+        const data = { id: snap.id, ...snap.data() } as Customer;
+        memoryCustomerMap[customerId] = data;
+        setCustomer(data);
       }
       setLoading(false);
     });
