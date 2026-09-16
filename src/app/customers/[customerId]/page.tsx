@@ -165,18 +165,31 @@ function DeleteModal({
   );
 }
 
+import { getLocalCache, setLocalCache } from "@/lib/cache";
+
 // Global in-memory cache for 0ms instant customer profile opening
 const memoryCustomerMap: Record<string, Customer> = {};
 
 // ─── Main Page ─────────────────────────────────────────────────────
 export default function CustomerProfilePage() {
   const { customerId } = useParams<{ customerId: string }>();
-  const [customer, setCustomer] = useState<Customer | null>(
-    () => (customerId ? memoryCustomerMap[customerId] || null : null)
-  );
-  const [loading, setLoading] = useState<boolean>(
-    () => (customerId ? !memoryCustomerMap[customerId] : true)
-  );
+  const cacheKey = `cablekhata_customer_${customerId}`;
+
+  const [customer, setCustomer] = useState<Customer | null>(() => {
+    if (!customerId) return null;
+    if (memoryCustomerMap[customerId]) return memoryCustomerMap[customerId];
+    const cached = getLocalCache<Customer>(cacheKey);
+    if (cached) {
+      memoryCustomerMap[customerId] = cached;
+      return cached;
+    }
+    return null;
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (!customerId) return false;
+    return !memoryCustomerMap[customerId] && !getLocalCache<Customer>(cacheKey);
+  });
   const [showMove, setShowMove] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showCollect, setShowCollect] = useState(false);
@@ -192,12 +205,13 @@ export default function CustomerProfilePage() {
       if (snap.exists()) {
         const data = { id: snap.id, ...snap.data() } as Customer;
         memoryCustomerMap[customerId] = data;
+        setLocalCache(cacheKey, data);
         setCustomer(data);
       }
       setLoading(false);
     });
     return () => unsub();
-  }, [customerId]);
+  }, [customerId, cacheKey]);
 
   const handleStartEditAddress = () => {
     if (!customer) return;
@@ -341,7 +355,6 @@ export default function CustomerProfilePage() {
                 </div>
                 <textarea
                   rows={2}
-                  autoFocus
                   value={addressInput}
                   onChange={(e) => setAddressInput(e.target.value)}
                   placeholder="Enter full doorstep address..."

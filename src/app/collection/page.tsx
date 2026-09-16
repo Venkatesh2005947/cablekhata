@@ -43,6 +43,11 @@ function getRecentMonths(count: number = 12): string[] {
   return months;
 }
 
+import { getLocalCache, setLocalCache } from "@/lib/cache";
+
+const PAYMENTS_CACHE_KEY = "cablekhata_payments_v2";
+const CUSTOMERS_CACHE_KEY = "cablekhata_customers_all_v2";
+
 // Global in-memory cache for instant 0ms tab switching
 let memoryCachedPayments: Payment[] | null = null;
 let memoryCachedCustomers: Customer[] | null = null;
@@ -51,9 +56,27 @@ export default function CollectionPage() {
   const { areas } = useAreas();
   const recentMonths = useMemo(() => getRecentMonths(12), []);
   const [selectedMonth, setSelectedMonth] = useState<string>(recentMonths[0]);
-  const [allPayments, setAllPayments] = useState<Payment[]>(() => memoryCachedPayments || []);
-  const [allCustomers, setAllCustomers] = useState<Customer[]>(() => memoryCachedCustomers || []);
-  const [loading, setLoading] = useState<boolean>(() => !memoryCachedPayments);
+  const [allPayments, setAllPayments] = useState<Payment[]>(() => {
+    if (memoryCachedPayments && memoryCachedPayments.length > 0) return memoryCachedPayments;
+    const cached = getLocalCache<Payment[]>(PAYMENTS_CACHE_KEY);
+    if (cached && cached.length > 0) {
+      memoryCachedPayments = cached;
+      return cached;
+    }
+    return [];
+  });
+  const [allCustomers, setAllCustomers] = useState<Customer[]>(() => {
+    if (memoryCachedCustomers && memoryCachedCustomers.length > 0) return memoryCachedCustomers;
+    const cached = getLocalCache<Customer[]>(CUSTOMERS_CACHE_KEY);
+    if (cached && cached.length > 0) {
+      memoryCachedCustomers = cached;
+      return cached;
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !(memoryCachedPayments?.length || getLocalCache<Payment[]>(PAYMENTS_CACHE_KEY)?.length);
+  });
   const [methodFilter, setMethodFilter] = useState<"ALL" | "Cash" | "UPI">("ALL");
   const [showQuickCollect, setShowQuickCollect] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -72,6 +95,7 @@ export default function CollectionPage() {
           (doc) => ({ id: doc.id, ...doc.data() } as Payment)
         );
         memoryCachedPayments = list;
+        setLocalCache(PAYMENTS_CACHE_KEY, list);
         setAllPayments(list);
         setLoading(false);
       },
@@ -84,19 +108,21 @@ export default function CollectionPage() {
     return () => unsubscribe();
   }, []);
 
-  // Fetch customers to calculate accurate target and house counts
+  // Listen to customers in parallel without blocking
   useEffect(() => {
-    const fetchCust = async () => {
-      try {
-        const snap = await getDocs(collection(db, "customers"));
+    const unsub = onSnapshot(
+      collection(db, "customers"),
+      (snap) => {
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Customer));
         memoryCachedCustomers = list;
+        setLocalCache(CUSTOMERS_CACHE_KEY, list);
         setAllCustomers(list);
-      } catch (err) {
-        console.warn("Could not fetch customers:", err);
+      },
+      (err) => {
+        console.warn("Could not stream customers on collection page:", err);
       }
-    };
-    fetchCust();
+    );
+    return () => unsub();
   }, []);
 
   // Total target monthly revenue based on all active customers

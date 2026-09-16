@@ -278,6 +278,8 @@ export default function AreasPage() {
           <input
             id="areaSearchInput"
             type="search"
+            inputMode="search"
+            enterKeyHint="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search area, landmark, house no..."

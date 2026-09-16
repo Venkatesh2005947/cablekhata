@@ -310,6 +310,8 @@ export default function AreaHousesPage() {
           <span className="material-symbols-outlined absolute left-3.5 text-outline text-[20px]">search</span>
           <input
             type="text"
+            inputMode="search"
+            enterKeyHint="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search house no, customer name, phone..."

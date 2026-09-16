@@ -4,95 +4,139 @@
 import { useEffect, useState } from "react";
 import {
   collection,
+  collectionGroup,
   onSnapshot,
   query,
   orderBy,
-  getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { getLocalCache, setLocalCache } from "@/lib/cache";
 import type { Area, AreaWithStats, Customer } from "@/types";
 
-// Global in-memory cache to make page switches 0ms instant
+const CACHE_KEY = "cablekhata_cached_areas_v2";
+const CUSTOMERS_CACHE_KEY = "cablekhata_customers_subcoll_v3";
+// Cache TTL: 5 minutes — after this, show a brief skeleton on first load
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_TS_KEY = "cablekhata_customers_cache_ts";
+
+// Global in-memory cache to make tab switches 0ms instant
 let memoryAreasCache: AreaWithStats[] | null = null;
+let memoryCustomersCache: Customer[] | null = null;
 
 export function useAreas() {
-  const [areas, setAreas] = useState<AreaWithStats[]>(() => memoryAreasCache || []);
-  const [loading, setLoading] = useState<boolean>(() => !memoryAreasCache);
+  const [areas, setAreas] = useState<AreaWithStats[]>(() => {
+    if (memoryAreasCache && memoryAreasCache.length > 0) return memoryAreasCache;
+    const cached = getLocalCache<AreaWithStats[]>(CACHE_KEY);
+    if (cached && cached.length > 0) {
+      memoryAreasCache = cached;
+      return cached;
+    }
+    return [];
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !memoryAreasCache || memoryAreasCache.length === 0;
+  });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let latestAreasDocs: Area[] = [];
+    let latestCustomers: Customer[] =
+      memoryCustomersCache || getLocalCache<Customer[]>(CUSTOMERS_CACHE_KEY) || [];
+
+    const computeAndSetStats = (areaList: Area[], custList: Customer[]) => {
+      if (areaList.length === 0) return;
+
+      const customersByArea: Record<string, Customer[]> = {};
+      custList.forEach((c) => {
+        const aId = c.areaId || "";
+        if (!customersByArea[aId]) customersByArea[aId] = [];
+        customersByArea[aId].push(c);
+      });
+
+      const areasWithStats: AreaWithStats[] = areaList.map((area) => {
+        const areaCustomers = customersByArea[area.id] || [];
+        const paidCount = areaCustomers.filter((c) => c.status === "PAID").length;
+        const pendingCount = areaCustomers.filter(
+          (c) => c.status === "PENDING" || c.status === "OVERDUE"
+        ).length;
+        const partialCount = areaCustomers.filter(
+          (c) => c.status === "PARTIAL"
+        ).length;
+        const targetAmount = areaCustomers.reduce(
+          (sum, c) => sum + (c.monthlyFee || 0),
+          0
+        );
+        const collectedAmount = areaCustomers
+          .filter((c) => c.status === "PAID")
+          .reduce((sum, c) => sum + (c.monthlyFee || 0), 0);
+
+        return {
+          ...area,
+          totalHouses: areaCustomers.length,
+          paidCount,
+          pendingCount,
+          partialCount,
+          collectedAmount,
+          targetAmount,
+          progressPercent:
+            targetAmount > 0
+              ? Math.round((collectedAmount / targetAmount) * 100)
+              : 0,
+        };
+      });
+
+      memoryAreasCache = areasWithStats;
+      setLocalCache(CACHE_KEY, areasWithStats);
+      setAreas(areasWithStats);
+      setLoading(false);
+    };
+
+    // 1. Subscribe to Areas collection
     const areasRef = collection(db, "areas");
-    const q = query(areasRef, orderBy("walkOrder", "asc"));
+    const qAreas = query(areasRef, orderBy("walkOrder", "asc"));
 
-    const unsubscribe = onSnapshot(
-      q,
-      async (snapshot) => {
-        try {
-          // 1. Fetch all customers once in a single fast query instead of N separate queries
-          const customersSnap = await getDocs(collection(db, "customers"));
-          const allCustomers = customersSnap.docs.map(
-            (c) => ({ id: c.id, ...c.data() } as Customer)
-          );
-
-          // 2. Group customers by areaId in memory (0ms)
-          const customersByArea: Record<string, Customer[]> = {};
-          allCustomers.forEach((c) => {
-            const aId = c.areaId || "";
-            if (!customersByArea[aId]) customersByArea[aId] = [];
-            customersByArea[aId].push(c);
-          });
-
-          // 3. Map areas with instant computed stats
-          const areasWithStats: AreaWithStats[] = snapshot.docs.map((doc) => {
-            const area = { id: doc.id, ...doc.data() } as Area;
-            const areaCustomers = customersByArea[doc.id] || [];
-
-            const paidCount = areaCustomers.filter((c) => c.status === "PAID").length;
-            const pendingCount = areaCustomers.filter(
-              (c) => c.status === "PENDING" || c.status === "OVERDUE"
-            ).length;
-            const partialCount = areaCustomers.filter(
-              (c) => c.status === "PARTIAL"
-            ).length;
-            const targetAmount = areaCustomers.reduce(
-              (sum, c) => sum + (c.monthlyFee || 0),
-              0
-            );
-            const collectedAmount = areaCustomers
-              .filter((c) => c.status === "PAID")
-              .reduce((sum, c) => sum + (c.monthlyFee || 0), 0);
-
-            return {
-              ...area,
-              totalHouses: areaCustomers.length,
-              paidCount,
-              pendingCount,
-              partialCount,
-              collectedAmount,
-              targetAmount,
-              progressPercent:
-                targetAmount > 0
-                  ? Math.round((collectedAmount / targetAmount) * 100)
-                  : 0,
-            };
-          });
-
-          memoryAreasCache = areasWithStats;
-          setAreas(areasWithStats);
-          setLoading(false);
-        } catch (err: any) {
-          console.error("Failed to load areas:", err);
-          setError("Failed to load areas");
-          setLoading(false);
-        }
+    const unsubAreas = onSnapshot(
+      qAreas,
+      (snapshot) => {
+        latestAreasDocs = snapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as Area)
+        );
+        computeAndSetStats(latestAreasDocs, latestCustomers);
       },
       (err) => {
+        console.warn("Could not stream areas:", err);
         setError(err.message);
         setLoading(false);
       }
     );
 
-    return () => unsubscribe();
+    // 2. Subscribe to customers via collectionGroup — reads all areas/{id}/customers
+    //    subcollections in ONE efficient query (no top-level full-table scan)
+    const qCustomers = query(collectionGroup(db, "customers"));
+    const unsubCustomers = onSnapshot(
+      qCustomers,
+      (snapshot) => {
+        latestCustomers = snapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as Customer)
+        );
+        memoryCustomersCache = latestCustomers;
+        setLocalCache(CUSTOMERS_CACHE_KEY, latestCustomers);
+        // Record timestamp for TTL checks
+        try {
+          localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
+        } catch { /* ignore */ }
+        computeAndSetStats(latestAreasDocs, latestCustomers);
+      },
+      (err) => {
+        console.warn("Could not stream customers for area stats:", err);
+      }
+    );
+
+    return () => {
+      unsubAreas();
+      unsubCustomers();
+    };
   }, []);
 
   return { areas, loading, error };

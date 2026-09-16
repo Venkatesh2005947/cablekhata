@@ -1,7 +1,6 @@
 // src/app/page.tsx
-import { redirect } from "next/navigation";
-
-// Root "/" redirects to the Areas Directory (main screen)
+// Root "/" is redirected to "/areas" via next.config.ts permanent redirect (308).
+// This component is never rendered — the config-level redirect fires first.
 export default function HomePage() {
-  redirect("/areas");
+  return null;
 }

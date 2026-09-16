@@ -113,7 +113,8 @@ export default function QuickCollectModal({
           </span>
           <input
             type="search"
-            autoFocus
+            inputMode="search"
+            enterKeyHint="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search House No, Name, STB ID, Phone..."
