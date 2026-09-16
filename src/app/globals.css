@@ -1,0 +1,192 @@
+/* ─── Google Fonts: Plus Jakarta Sans + Material Symbols ─── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block');
+
+@import "tailwindcss";
+
+/* ─── Tailwind v4: All design tokens go here ─── */
+@theme {
+  /* ── Font Family ── */
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+
+  /* ── Colors: Primary (Vivid Emerald) ── */
+  --color-primary:                   #006948;
+  --color-on-primary:                #ffffff;
+  --color-primary-container:         #00855d;
+  --color-on-primary-container:      #f5fff7;
+  --color-primary-fixed:             #85f8c4;
+  --color-primary-fixed-dim:         #68dba9;
+  --color-on-primary-fixed:          #002114;
+  --color-on-primary-fixed-variant:  #005137;
+  --color-inverse-primary:           #68dba9;
+
+  /* ── Colors: Secondary (Amber Gold) ── */
+  --color-secondary:                       #904d00;
+  --color-on-secondary:                    #ffffff;
+  --color-secondary-container:             #fe932c;
+  --color-on-secondary-container:          #663500;
+  --color-secondary-fixed:                 #ffdcc3;
+  --color-secondary-fixed-dim:             #ffb77d;
+  --color-on-secondary-fixed:              #2f1500;
+  --color-on-secondary-fixed-variant:      #6e3900;
+
+  /* ── Colors: Tertiary (Cobalt Blue) ── */
+  --color-tertiary:                    #0051d5;
+  --color-on-tertiary:                 #ffffff;
+  --color-tertiary-container:          #316bf3;
+  --color-on-tertiary-container:       #fefcff;
+  --color-tertiary-fixed:              #dbe1ff;
+  --color-tertiary-fixed-dim:          #b4c5ff;
+  --color-on-tertiary-fixed:           #00174b;
+  --color-on-tertiary-fixed-variant:   #003ea8;
+
+  /* ── Colors: Error (Vivid Crimson) ── */
+  --color-error:                #ba1a1a;
+  --color-on-error:             #ffffff;
+  --color-error-container:      #ffdad6;
+  --color-on-error-container:   #93000a;
+
+  /* ── Colors: Surface system ── */
+  --color-surface:                    #faf8ff;
+  --color-surface-dim:                #d2d9f4;
+  --color-surface-bright:             #faf8ff;
+  --color-surface-container-lowest:   #ffffff;
+  --color-surface-container-low:      #f2f3ff;
+  --color-surface-container:          #eaedff;
+  --color-surface-container-high:     #e2e7ff;
+  --color-surface-container-highest:  #dae2fd;
+  --color-surface-variant:            #dae2fd;
+  --color-surface-tint:               #006c4a;
+
+  /* ── Colors: On-surface ── */
+  --color-on-surface:          #131b2e;
+  --color-on-surface-variant:  #3d4a42;
+  --color-inverse-surface:     #283044;
+  --color-inverse-on-surface:  #eef0ff;
+
+  /* ── Colors: Outline ── */
+  --color-outline:          #6d7a72;
+  --color-outline-variant:  #bccac0;
+
+  /* ── Colors: Background ── */
+  --color-background:     #faf8ff;
+  --color-on-background:  #131b2e;
+
+  /* ── Border Radius ── */
+  --radius-sm:    0.25rem;
+  --radius:       0.5rem;
+  --radius-md:    0.75rem;
+  --radius-lg:    1rem;
+  --radius-xl:    1.5rem;
+  --radius-full:  9999px;
+
+  /* ── Spacing tokens ── */
+  --spacing-space-xs:      0.25rem;
+  --spacing-space-sm:      0.5rem;
+  --spacing-space-md:      1rem;
+  --spacing-space-lg:      1.5rem;
+  --spacing-space-xl:      2rem;
+  --spacing-gutter-mobile: 0.75rem;
+  --spacing-gutter:        1rem;
+  --spacing-margin-mobile: 1rem;
+  --spacing-margin:        1.5rem;
+
+  /* ── Box Shadow ── */
+  --shadow-card:        0 1px 3px rgba(15,23,42,0.08);
+  --shadow-card-active: 0 4px 12px -2px rgba(15,23,42,0.12);
+  --shadow-modal:       0 12px 24px -4px rgba(15,23,42,0.18);
+
+  /* ── Typography scale ── */
+  --text-display-lg:              36px;
+  --text-display-lg--line-height: 44px;
+
+  --text-display-lg-mobile:              28px;
+  --text-display-lg-mobile--line-height: 36px;
+
+  --text-headline-lg:              28px;
+  --text-headline-lg--line-height: 36px;
+
+  --text-headline-lg-mobile:              22px;
+  --text-headline-lg-mobile--line-height: 30px;
+
+  --text-headline-md:              20px;
+  --text-headline-md--line-height: 28px;
+
+  --text-headline-sm:              18px;
+  --text-headline-sm--line-height: 24px;
+
+  --text-body-lg:              16px;
+  --text-body-lg--line-height: 24px;
+
+  --text-body-md:              15px;
+  --text-body-md--line-height: 22px;
+
+  --text-body-sm:              13px;
+  --text-body-sm--line-height: 18px;
+
+  --text-label-lg:              14px;
+  --text-label-lg--line-height: 20px;
+
+  --text-label-md:              12px;
+  --text-label-md--line-height: 16px;
+
+  --text-label-sm:              11px;
+  --text-label-sm--line-height: 14px;
+
+  --text-currency-display:              32px;
+  --text-currency-display--line-height: 38px;
+}
+
+/* ─── Base resets ─── */
+@layer base {
+  html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    font-size: 15px;
+    line-height: 22px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+  }
+
+  ::-webkit-scrollbar { display: none; }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+    user-select: none;
+    line-height: 1;
+  }
+}
+
+/* ─── Selection color ─── */
+::selection {
+  background-color: rgb(0 105 72 / 0.2);
+}
+
+/* ─── Scrollbar utility ─── */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ─── Safe area insets ─── */
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ─── Tabular numerics ─── */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ─── Hide Next.js dev indicator badge ─── */
+nextjs-portal,
+[data-nextjs-toast],
+#__next-build-watcher {
+  display: none !important;
+}
