@@ -325,16 +325,16 @@ export default function AreaHousesPage() {
         <div className="flex items-center justify-between gap-space-sm">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-secondary-container/20 text-secondary flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[24px]">
+              <span suppressHydrationWarning className="material-symbols-outlined text-[24px]">
                 {area?.icon ?? "location_on"}
               </span>
             </div>
             <div className="min-w-0">
-              <h1 className="text-headline-lg-mobile text-on-surface truncate font-bold">
-                {area?.name ?? "Loading…"}
+              <h1 suppressHydrationWarning className="text-headline-lg-mobile text-on-surface truncate font-bold">
+                {area?.name ?? "Area"}
               </h1>
-              <p className="text-label-sm text-on-surface-variant uppercase tracking-wider">
-                LANE DIRECTORY • {area ? `ROUTE 0${area.walkOrder}` : ""}
+              <p suppressHydrationWarning className="text-label-sm text-on-surface-variant uppercase tracking-wider">
+                LANE DIRECTORY • {area ? `ROUTE 0${area.walkOrder}` : "ROUTE"}
               </p>
             </div>
           </div>

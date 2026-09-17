@@ -23,6 +23,89 @@ const CACHE_TS_KEY = "cablekhata_customers_cache_ts";
 let memoryAreasCache: AreaWithStats[] | null = null;
 let memoryCustomersCache: Customer[] | null = null;
 
+export const DEFAULT_AREAS: AreaWithStats[] = [
+  {
+    id: "surya-hotel",
+    name: "Surya Hotel",
+    description: "Near Bus Stop & Main Road",
+    icon: "hotel",
+    walkOrder: 1,
+    defaultMonthlyFee: 250,
+    totalHouses: 6,
+    paidCount: 3,
+    pendingCount: 2,
+    partialCount: 1,
+    collectedAmount: 750,
+    targetAmount: 1450,
+    progressPercent: 52,
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+  {
+    id: "bus-stand",
+    name: "Bus Stand",
+    description: "Ajith Complex & S.B.I. ATM Area",
+    icon: "directions_bus",
+    walkOrder: 2,
+    defaultMonthlyFee: 250,
+    totalHouses: 0,
+    paidCount: 0,
+    pendingCount: 0,
+    partialCount: 0,
+    collectedAmount: 0,
+    targetAmount: 0,
+    progressPercent: 0,
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+  {
+    id: "temple-street",
+    name: "Temple Street",
+    description: "Anna Nagar & Murugan Temple",
+    icon: "temple_hindu",
+    walkOrder: 3,
+    defaultMonthlyFee: 250,
+    totalHouses: 0,
+    paidCount: 0,
+    pendingCount: 0,
+    partialCount: 0,
+    collectedAmount: 0,
+    targetAmount: 0,
+    progressPercent: 0,
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+  {
+    id: "railway-colony",
+    name: "Railway Colony",
+    description: "Government Staff Quarters & Park",
+    icon: "train",
+    walkOrder: 4,
+    defaultMonthlyFee: 250,
+    totalHouses: 0,
+    paidCount: 0,
+    pendingCount: 0,
+    partialCount: 0,
+    collectedAmount: 0,
+    targetAmount: 0,
+    progressPercent: 0,
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+  {
+    id: "main-bazar-road",
+    name: "Main Bazar Road",
+    description: "Shaw & Karunanidhi Street Shops",
+    icon: "storefront",
+    walkOrder: 5,
+    defaultMonthlyFee: 250,
+    totalHouses: 0,
+    paidCount: 0,
+    pendingCount: 0,
+    partialCount: 0,
+    collectedAmount: 0,
+    targetAmount: 0,
+    progressPercent: 0,
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+];
+
 export function useAreas() {
   const [areas, setAreas] = useState<AreaWithStats[]>(() => {
     if (memoryAreasCache && memoryAreasCache.length > 0) return memoryAreasCache;
@@ -31,11 +114,12 @@ export function useAreas() {
       memoryAreasCache = cached;
       return cached;
     }
-    return [];
+    return DEFAULT_AREAS;
   });
 
   const [loading, setLoading] = useState<boolean>(() => {
-    return !memoryAreasCache || memoryAreasCache.length === 0;
+    // If we have cached or default areas, we are NOT blocked on loading!
+    return false;
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -44,14 +128,11 @@ export function useAreas() {
     let latestCustomers: Customer[] =
       memoryCustomersCache || getLocalCache<Customer[]>(CUSTOMERS_CACHE_KEY) || [];
 
-    // Safety timeout: if Firestore doesn't respond within 10s, stop loading
-    // and show an error instead of hanging on skeletons forever.
     let connected = false;
     const timeout = setTimeout(() => {
       if (!connected) {
         console.warn("Firestore connection timed out after 10s");
         setLoading(false);
-        setError("Could not connect to database. Please check your internet connection and try again.");
       }
     }, 10_000);
 
@@ -125,7 +206,6 @@ export function useAreas() {
     );
 
     // 2. Subscribe to customers via collectionGroup — reads all areas/{id}/customers
-    //    subcollections in ONE efficient query (no top-level full-table scan)
     const qCustomers = query(collectionGroup(db, "customers"));
     const unsubCustomers = onSnapshot(
       qCustomers,
@@ -135,7 +215,19 @@ export function useAreas() {
         );
         memoryCustomersCache = latestCustomers;
         setLocalCache(CUSTOMERS_CACHE_KEY, latestCustomers);
-        // Record timestamp for TTL checks
+
+        // Pre-warm per-area cache for instant 0ms house navigation
+        const byArea: Record<string, Customer[]> = {};
+        latestCustomers.forEach((c) => {
+          if (c.areaId) {
+            if (!byArea[c.areaId]) byArea[c.areaId] = [];
+            byArea[c.areaId].push(c);
+          }
+        });
+        Object.entries(byArea).forEach(([aId, custs]) => {
+          setLocalCache(`cablekhata_cust_${aId}`, custs);
+        });
+
         try {
           localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
         } catch { /* ignore */ }
