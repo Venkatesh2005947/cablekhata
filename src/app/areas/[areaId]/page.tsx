@@ -62,20 +62,10 @@ function HouseCard({
             <h2 className="text-headline-sm text-on-surface truncate font-semibold">
               {customer.name}
             </h2>
-            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-              <button
-                type="button"
-                onClick={() => onEditStb(customer)}
-                className="inline-flex items-center gap-1 text-[11px] font-mono text-secondary hover:text-primary bg-secondary/10 hover:bg-secondary/20 px-2 py-0.5 rounded-md transition-all active:scale-95 group"
-                title="Click to edit STB Number"
-              >
-                <span className="material-symbols-outlined text-[13px]">tv</span>
-                <span>STB: <strong className="font-bold">{customer.stbId || "Not Set"}</strong></span>
-                <span className="material-symbols-outlined text-[12px] opacity-70 group-hover:opacity-100">edit</span>
-              </button>
-              <span className="text-on-surface-variant text-[11px]">•</span>
-              <span className="text-label-sm font-bold text-on-surface">₹{customer.monthlyFee}/mo</span>
-            </div>
+            <p className="text-label-sm text-on-surface-variant pt-0.5">
+              <span className="font-bold text-on-surface">₹{customer.monthlyFee}</span>
+              <span>/month</span>
+            </p>
           </div>
         </div>
         <StatusBadge status={customer.status} />
