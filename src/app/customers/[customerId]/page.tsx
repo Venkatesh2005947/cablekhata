@@ -9,6 +9,7 @@ import { db } from "@/lib/firebase";
 import { usePaymentHistory } from "@/hooks/usePaymentHistory";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { showToast } from "@/components/ui/Toast";
+import { validateAddress } from "@/lib/validation";
 import CollectPaymentModal from "@/components/payment/CollectPaymentModal";
 import type { Customer, Payment } from "@/types";
 
@@ -127,11 +128,20 @@ function DeleteModal({
 }) {
   const handleDelete = async () => {
     try {
-      await updateDoc(doc(db, "customers", customer.id), { isActive: false });
-      showToast({ message: `${customer.connectionId} removed from registry`, icon: "delete" });
+      if (customer.areaId) {
+        await deleteDoc(doc(db, "areas", customer.areaId, "customers", customer.id));
+      }
+      await deleteDoc(doc(db, "customers", customer.id));
+      showToast({ message: `${customer.name} removed from registry`, icon: "delete" });
       onClose();
       // Navigate back after brief delay
-      setTimeout(() => window.history.back(), 1200);
+      setTimeout(() => {
+        if (customer.areaId) {
+          window.location.href = `/areas/${customer.areaId}`;
+        } else {
+          window.history.back();
+        }
+      }, 600);
     } catch {
       showToast({ message: "Failed to delete customer", icon: "error" });
     }
@@ -220,22 +230,34 @@ export default function CustomerProfilePage() {
   };
 
   const handleSaveAddress = async () => {
-    if (!customer || !addressInput.trim()) return;
+    if (!customer) return;
+    const valRes = validateAddress(addressInput);
+    if (!valRes.isValid) {
+      showToast({ message: valRes.error || "Please enter a valid doorstep address", icon: "warning" });
+      return;
+    }
     setSavingAddress(true);
     try {
       const nowIso = new Date().toISOString();
+      const cleanAddress = addressInput.trim();
       // Update top-level customer document
       await updateDoc(doc(db, "customers", customer.id), {
-        address: addressInput.trim(),
+        address: cleanAddress,
         updatedAt: nowIso,
       });
 
       // Update area customer subcollection if areaId exists
       if (customer.areaId) {
         await updateDoc(doc(db, "areas", customer.areaId, "customers", customer.id), {
-          address: addressInput.trim(),
+          address: cleanAddress,
           updatedAt: nowIso,
         });
+        const areaCacheKey = `cablekhata_cust_${customer.areaId}`;
+        const cached = getLocalCache<Customer[]>(areaCacheKey) || [];
+        setLocalCache(
+          areaCacheKey,
+          cached.map((c) => (c.id === customer.id ? { ...c, address: cleanAddress } : c))
+        );
       }
 
       showToast({ message: "Doorstep address updated!", icon: "check_circle" });

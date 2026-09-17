@@ -7,6 +7,8 @@ import { useParams, useRouter } from "next/navigation";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { showToast } from "@/components/ui/Toast";
+import { validateAddress, validateHouseName } from "@/lib/validation";
+import { getLocalCache, setLocalCache } from "@/lib/cache";
 import type { Customer } from "@/types";
 
 const FEE_PRESETS = [200, 250, 300, 350];
@@ -46,20 +48,65 @@ export default function EditCustomerPage() {
   }, [customerId]);
 
   const handleSave = async () => {
-    if (!customerId || !name.trim()) return;
+    if (!customerId) return;
+
+    const nameVal = validateHouseName(name);
+    if (!nameVal.isValid) {
+      showToast({ message: nameVal.error || "Please enter a valid customer name", icon: "warning" });
+      return;
+    }
+
+    const addrVal = validateAddress(address);
+    if (!addrVal.isValid) {
+      showToast({ message: addrVal.error || "Please enter a valid doorstep address", icon: "warning" });
+      return;
+    }
+
     setSaving(true);
     try {
-      await updateDoc(doc(db, "customers", customerId), {
-        name: name.trim(),
-        phone: phone.trim(),
-        address: address.trim(),
-        monthlyFee: fee,
-        stbId: stbId.trim(),
-        connectionId: connectionId.trim(),
-        collectorNote: collectorNote.trim(),
-      });
-      showToast({ message: `Saved changes for ${name}`, icon: "task_alt" });
-      setTimeout(() => router.push(`/customers/${customerId}`), 800);
+      const nowIso = new Date().toISOString();
+      const cleanName = name.trim();
+      const cleanPhone = phone.trim();
+      const cleanAddress = address.trim();
+      const cleanStb = stbId.trim();
+      const cleanConn = connectionId.trim();
+      const cleanNote = collectorNote.trim();
+
+      const updatePayload = {
+        name: cleanName,
+        phone: cleanPhone || "Not Provided",
+        address: cleanAddress,
+        monthlyFee: Number(fee) || 250,
+        stbId: cleanStb,
+        connectionId: cleanConn,
+        collectorNote: cleanNote || null,
+        updatedAt: nowIso,
+      };
+
+      // 1. Update root customer
+      await updateDoc(doc(db, "customers", customerId), updatePayload);
+
+      // 2. Update area customer if areaId exists
+      if (areaId) {
+        await updateDoc(doc(db, "areas", areaId, "customers", customerId), updatePayload);
+        const areaCacheKey = `cablekhata_cust_${areaId}`;
+        const cached = getLocalCache<Customer[]>(areaCacheKey) || [];
+        setLocalCache(
+          areaCacheKey,
+          cached.map((c) =>
+            c.id === customerId
+              ? {
+                  ...c,
+                  ...updatePayload,
+                  collectorNote: cleanNote || undefined,
+                }
+              : c
+          )
+        );
+      }
+
+      showToast({ message: `Saved changes for ${cleanName}`, icon: "task_alt" });
+      setTimeout(() => router.push(`/customers/${customerId}`), 600);
     } catch {
       showToast({ message: "Failed to save changes", icon: "error" });
     } finally {

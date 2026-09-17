@@ -229,8 +229,11 @@ export default function AreasPage() {
       </div>
 
       <div className="px-gutter-mobile flex flex-col gap-space-md mt-space-sm">
-        {/* Summary tile */}
-        {loading ? (
+        {/* Summary tile — show immediately if we have any data (cached or live).
+            Only show a slim skeleton on true cold start (no data at all). */}
+        {areas.length > 0 ? (
+          <SummaryTile areas={areas} />
+        ) : loading ? (
           <div className="h-40 bg-surface-container-lowest rounded-xl animate-pulse" />
         ) : (
           <SummaryTile areas={areas} />
@@ -296,21 +299,22 @@ export default function AreasPage() {
           </div>
         </div>
 
-        {/* Area cards */}
+        {/* Area cards — show cached data immediately; skeleton only on true cold
+            start (loading=true AND no cached data at all). */}
         <div className="flex flex-col gap-space-sm pb-space-lg">
-          {loading ? (
+          {loading && areas.length === 0 ? (
             <>
               <SkeletonCard />
               <SkeletonCard />
               <SkeletonCard />
             </>
-          ) : error ? (
+          ) : error && areas.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-space-xl text-center bg-surface-container-lowest rounded-xl shadow-card">
               <span className="material-symbols-outlined text-error text-[32px] mb-2">error</span>
               <p className="text-headline-sm text-on-surface">Failed to load areas</p>
               <p className="text-body-sm text-on-surface-variant mt-1">{error}</p>
             </div>
-          ) : filtered.length === 0 ? (
+          ) : filtered.length === 0 && !loading ? (
             <div className="flex flex-col items-center justify-center p-space-xl text-center bg-surface-container-lowest rounded-xl shadow-card">
               <div className="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant mb-2">
                 <span className="material-symbols-outlined text-[28px]">search_off</span>

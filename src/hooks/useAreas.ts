@@ -45,8 +45,6 @@ export function useAreas() {
       memoryCustomersCache || getLocalCache<Customer[]>(CUSTOMERS_CACHE_KEY) || [];
 
     const computeAndSetStats = (areaList: Area[], custList: Customer[]) => {
-      if (areaList.length === 0) return;
-
       const customersByArea: Record<string, Customer[]> = {};
       custList.forEach((c) => {
         const aId = c.areaId || "";
@@ -89,7 +87,6 @@ export function useAreas() {
       memoryAreasCache = areasWithStats;
       setLocalCache(CACHE_KEY, areasWithStats);
       setAreas(areasWithStats);
-      setLoading(false);
     };
 
     // 1. Subscribe to Areas collection
@@ -103,6 +100,7 @@ export function useAreas() {
           (doc) => ({ id: doc.id, ...doc.data() } as Area)
         );
         computeAndSetStats(latestAreasDocs, latestCustomers);
+        setLoading(false);
       },
       (err) => {
         console.warn("Could not stream areas:", err);

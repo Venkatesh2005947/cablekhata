@@ -44,9 +44,9 @@ export function useCustomers(areaId: string) {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const data = snapshot.docs.map(
-          (doc) => ({ id: doc.id, ...doc.data() } as Customer)
-        );
+        const data = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() } as Customer))
+          .filter((c) => c.isActive !== false);
         memoryCustomersCache[areaId] = data;
         setLocalCache(cacheKey, data);
         setCustomers(data);

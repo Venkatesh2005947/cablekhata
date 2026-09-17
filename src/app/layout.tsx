@@ -42,14 +42,28 @@ export default function RootLayout({
   return (
     <html lang="en" className={`light ${plusJakartaSans.variable}`}>
       <head>
-        {/* Preconnect for Material Symbols only (Plus Jakarta Sans is handled by next/font) */}
+        {/* DNS prefetch + preconnect for Google Fonts CDNs */}
+        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* Material Symbols: fixed axes only (opsz=24, wght=600, FILL=0, GRAD=0)
-            This avoids loading the full variable font (~200KB) and cuts it to ~60KB */}
+
+        {/* Material Symbols: load as non-render-blocking via preload + onload swap.
+            Fixed axes only (opsz=24, wght=600, FILL=0, GRAD=0) keeps it ~60KB.
+            The <noscript> fallback ensures icons still render with JS disabled. */}
         <link
+          rel="preload"
+          as="style"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,600,0,0&display=block"
-          rel="stylesheet"
+          // @ts-expect-error — onload is valid for link[rel=preload] in browsers
+          onLoad="this.onload=null;this.rel='stylesheet'"
         />
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,600,0,0&display=block"
+          />
+        </noscript>
       </head>
       <body className={`${plusJakartaSans.className} min-h-screen flex flex-col antialiased`}>
         <AppHeader />
