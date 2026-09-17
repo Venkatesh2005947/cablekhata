@@ -44,6 +44,17 @@ export function useAreas() {
     let latestCustomers: Customer[] =
       memoryCustomersCache || getLocalCache<Customer[]>(CUSTOMERS_CACHE_KEY) || [];
 
+    // Safety timeout: if Firestore doesn't respond within 10s, stop loading
+    // and show an error instead of hanging on skeletons forever.
+    let connected = false;
+    const timeout = setTimeout(() => {
+      if (!connected) {
+        console.warn("Firestore connection timed out after 10s");
+        setLoading(false);
+        setError("Could not connect to database. Please check your internet connection and try again.");
+      }
+    }, 10_000);
+
     const computeAndSetStats = (areaList: Area[], custList: Customer[]) => {
       const customersByArea: Record<string, Customer[]> = {};
       custList.forEach((c) => {
@@ -96,6 +107,8 @@ export function useAreas() {
     const unsubAreas = onSnapshot(
       qAreas,
       (snapshot) => {
+        connected = true;
+        clearTimeout(timeout);
         latestAreasDocs = snapshot.docs.map(
           (doc) => ({ id: doc.id, ...doc.data() } as Area)
         );
@@ -103,6 +116,8 @@ export function useAreas() {
         setLoading(false);
       },
       (err) => {
+        connected = true;
+        clearTimeout(timeout);
         console.warn("Could not stream areas:", err);
         setError(err.message);
         setLoading(false);
@@ -132,6 +147,7 @@ export function useAreas() {
     );
 
     return () => {
+      clearTimeout(timeout);
       unsubAreas();
       unsubCustomers();
     };
