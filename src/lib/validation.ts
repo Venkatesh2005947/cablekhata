@@ -124,3 +124,25 @@ export function validatePhone(phone: string): ValidationResult {
 
   return { isValid: true };
 }
+
+/**
+ * Validates Set Top Box (STB) Number.
+ * Ensures the STB number is entered, has at least 2 characters, and is alphanumeric.
+ */
+export function validateStbNumber(stbId: string): ValidationResult {
+  const trimmed = (stbId || "").trim();
+
+  if (!trimmed) {
+    return { isValid: false, error: "Set Top Box (STB) Number is required" };
+  }
+
+  if (trimmed.length < 2) {
+    return { isValid: false, error: "STB Number must be at least 2 characters" };
+  }
+
+  if (trimmed.length > 30) {
+    return { isValid: false, error: "STB Number is too long (max 30 characters)" };
+  }
+
+  return { isValid: true };
+}

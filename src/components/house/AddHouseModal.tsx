@@ -10,6 +10,7 @@ import {
   validateHouseName,
   validateHouseNumber,
   validatePhone,
+  validateStbNumber,
 } from "@/lib/validation";
 import { setLocalCache, getLocalCache } from "@/lib/cache";
 import type { Customer } from "@/types";
@@ -38,6 +39,7 @@ export default function AddHouseModal({
   // Form state
   const [name, setName] = useState("");
   const [houseNumber, setHouseNumber] = useState("");
+  const [stbId, setStbId] = useState("");
   const [address, setAddress] = useState("");
   const [collectorNote, setCollectorNote] = useState("");
   const [phone, setPhone] = useState("");
@@ -47,12 +49,14 @@ export default function AddHouseModal({
   const [errors, setErrors] = useState<{
     name?: string;
     houseNumber?: string;
+    stbId?: string;
     address?: string;
     phone?: string;
   }>({});
   const [touched, setTouched] = useState<{
     name?: boolean;
     houseNumber?: boolean;
+    stbId?: boolean;
     address?: boolean;
     phone?: boolean;
   }>({});
@@ -61,12 +65,12 @@ export default function AddHouseModal({
 
   if (!isOpen) return null;
 
-  const handleBlur = (field: "name" | "houseNumber" | "address" | "phone") => {
+  const handleBlur = (field: "name" | "houseNumber" | "stbId" | "address" | "phone") => {
     setTouched((prev) => ({ ...prev, [field]: true }));
     validateField(field);
   };
 
-  const validateField = (field: "name" | "houseNumber" | "address" | "phone") => {
+  const validateField = (field: "name" | "houseNumber" | "stbId" | "address" | "phone") => {
     const nextErrors = { ...errors };
 
     if (field === "name") {
@@ -79,6 +83,12 @@ export default function AddHouseModal({
       const res = validateHouseNumber(houseNumber);
       if (!res.isValid) nextErrors.houseNumber = res.error;
       else delete nextErrors.houseNumber;
+    }
+
+    if (field === "stbId") {
+      const res = validateStbNumber(stbId);
+      if (!res.isValid) nextErrors.stbId = res.error;
+      else delete nextErrors.stbId;
     }
 
     if (field === "address") {
@@ -100,17 +110,19 @@ export default function AddHouseModal({
   const validateAll = () => {
     const nameRes = validateHouseName(name);
     const houseNoRes = validateHouseNumber(houseNumber);
+    const stbRes = validateStbNumber(stbId);
     const addressRes = validateAddress(address);
     const phoneRes = validatePhone(phone);
 
     const newErrors: typeof errors = {};
     if (!nameRes.isValid) newErrors.name = nameRes.error;
     if (!houseNoRes.isValid) newErrors.houseNumber = houseNoRes.error;
+    if (!stbRes.isValid) newErrors.stbId = stbRes.error;
     if (!addressRes.isValid) newErrors.address = addressRes.error;
     if (!phoneRes.isValid) newErrors.phone = phoneRes.error;
 
     setErrors(newErrors);
-    setTouched({ name: true, houseNumber: true, address: true, phone: true });
+    setTouched({ name: true, houseNumber: true, stbId: true, address: true, phone: true });
     return Object.keys(newErrors).length === 0;
   };
 
@@ -128,6 +140,7 @@ export default function AddHouseModal({
       const nowIso = new Date().toISOString();
       const cleanDoorNo = houseNumber.trim();
       const cleanName = name.trim();
+      const cleanStb = stbId.trim();
       const cleanAddress = address.trim();
       const cleanNote = collectorNote.trim();
       const cleanPhone = phone.trim();
@@ -136,7 +149,6 @@ export default function AddHouseModal({
       const uniqueSuffix = Date.now().toString(36).slice(-4) + Math.floor(Math.random() * 900 + 100);
       const customerId = `cbl_${cleanDoorNo.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "h"}_${uniqueSuffix}`;
       const connectionId = `CBL${cleanDoorNo.replace(/\D/g, "").padStart(3, "0").slice(-3) || Math.floor(100 + Math.random() * 899)}`;
-      const stbId = `STB-${Math.floor(1000 + Math.random() * 9000)}`;
 
       const newCustomer: Customer = {
         id: customerId,
@@ -147,7 +159,7 @@ export default function AddHouseModal({
         areaName,
         houseNumber: cleanDoorNo,
         walkOrder: nextWalkOrder,
-        stbId,
+        stbId: cleanStb,
         connectionId,
         monthlyFee: Number(monthlyFee) || defaultFee,
         status: "PENDING",
@@ -301,6 +313,54 @@ export default function AddHouseModal({
                 </span>
               )}
             </div>
+          </div>
+
+          {/* Row 2: Set Top Box (STB) Number */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label htmlFor="stb_number" className="text-label-md text-on-surface font-bold flex items-center gap-1">
+                <span>Set Top Box No (STB No)</span>
+                <span className="text-error font-extrabold">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  const autoStb = `STB-${Math.floor(1000 + Math.random() * 9000)}`;
+                  setStbId(autoStb);
+                  if (touched.stbId) validateField("stbId");
+                }}
+                className="text-label-sm text-primary hover:underline font-bold flex items-center gap-0.5"
+              >
+                <span className="material-symbols-outlined text-[14px]">auto_fix_high</span>
+                <span>Auto-generate</span>
+              </button>
+            </div>
+            <div className="relative flex items-center">
+              <span className="material-symbols-outlined absolute left-3 text-secondary text-[18px]">
+                tv
+              </span>
+              <input
+                id="stb_number"
+                type="text"
+                value={stbId}
+                onChange={(e) => {
+                  setStbId(e.target.value);
+                  if (touched.stbId) validateField("stbId");
+                }}
+                onBlur={() => handleBlur("stbId")}
+                placeholder="e.g. STB-8831 or 8831"
+                className={`w-full h-12 pl-9 pr-3 rounded-xl bg-surface-container text-on-surface font-mono text-body-md font-bold focus:outline-none transition-all ${
+                  errors.stbId && touched.stbId
+                    ? "ring-2 ring-error bg-error-container/10"
+                    : "focus:ring-2 focus:ring-primary/50"
+                }`}
+              />
+            </div>
+            {errors.stbId && touched.stbId && (
+              <span className="text-label-sm text-error font-medium px-1">
+                {errors.stbId}
+              </span>
+            )}
           </div>
 
           {/* Full Address */}

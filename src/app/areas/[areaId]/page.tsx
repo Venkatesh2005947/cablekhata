@@ -13,6 +13,7 @@ import AddHouseModal from "@/components/house/AddHouseModal";
 import EditHouseModal from "@/components/house/EditHouseModal";
 import EditAddressModal from "@/components/house/EditAddressModal";
 import DeleteHouseModal from "@/components/house/DeleteHouseModal";
+import EditStbModal from "@/components/house/EditStbModal";
 import type { Customer } from "@/types";
 
 type SortKey = "walkOrder" | "pendingFirst" | "paidFirst" | "name";
@@ -23,12 +24,14 @@ function HouseCard({
   onCollect,
   onEdit,
   onEditAddress,
+  onEditStb,
   onDelete,
 }: {
   customer: Customer;
   onCollect: (c: Customer) => void;
   onEdit: (c: Customer) => void;
   onEditAddress: (c: Customer) => void;
+  onEditStb: (c: Customer) => void;
   onDelete: (c: Customer) => void;
 }) {
   const isPaid = customer.status === "PAID";
@@ -59,14 +62,49 @@ function HouseCard({
             <h2 className="text-headline-sm text-on-surface truncate font-semibold">
               {customer.name}
             </h2>
-            <p className="text-label-sm text-on-surface-variant flex items-center gap-1.5 truncate">
-              <span>STB: <strong className="font-mono text-secondary font-medium">{customer.stbId}</strong></span>
-              <span>•</span>
-              <span className="font-bold text-on-surface">₹{customer.monthlyFee}/mo</span>
-            </p>
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              <button
+                type="button"
+                onClick={() => onEditStb(customer)}
+                className="inline-flex items-center gap-1 text-[11px] font-mono text-secondary hover:text-primary bg-secondary/10 hover:bg-secondary/20 px-2 py-0.5 rounded-md transition-all active:scale-95 group"
+                title="Click to edit STB Number"
+              >
+                <span className="material-symbols-outlined text-[13px]">tv</span>
+                <span>STB: <strong className="font-bold">{customer.stbId || "Not Set"}</strong></span>
+                <span className="material-symbols-outlined text-[12px] opacity-70 group-hover:opacity-100">edit</span>
+              </button>
+              <span className="text-on-surface-variant text-[11px]">•</span>
+              <span className="text-label-sm font-bold text-on-surface">₹{customer.monthlyFee}/mo</span>
+            </div>
           </div>
         </div>
         <StatusBadge status={customer.status} />
+      </div>
+
+      {/* Set Top Box Row with Quick Edit button */}
+      <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-surface-container-low border border-surface-container/60">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <span className="material-symbols-outlined text-[18px] text-secondary shrink-0">
+            tv
+          </span>
+          <div className="min-w-0">
+            <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold block">
+              Set Top Box (STB)
+            </span>
+            <p className="text-body-sm font-mono text-on-surface font-bold truncate">
+              {customer.stbId || "No STB Assigned"}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onEditStb(customer)}
+          className="inline-flex items-center gap-1 text-[11px] font-bold text-secondary bg-secondary/10 hover:bg-secondary/20 px-2 py-1 rounded-md shrink-0 transition-colors active:scale-95"
+          title="Edit Set Top Box Number"
+        >
+          <span className="material-symbols-outlined text-[13px]">edit</span>
+          <span>Edit STB</span>
+        </button>
       </div>
 
       {/* Doorstep Address Row with Quick Edit button */}
@@ -240,6 +278,7 @@ export default function AreaHousesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingHouse, setEditingHouse] = useState<Customer | null>(null);
   const [editingAddressCustomer, setEditingAddressCustomer] = useState<Customer | null>(null);
+  const [editingStbCustomer, setEditingStbCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
   const [collectingCustomer, setCollectingCustomer] = useState<Customer | null>(null);
 
@@ -253,6 +292,7 @@ export default function AreaHousesPage() {
           (c.phone && c.phone.includes(q)) ||
           c.houseNumber.toLowerCase().includes(q) ||
           (c.address && c.address.toLowerCase().includes(q)) ||
+          (c.stbId && c.stbId.toLowerCase().includes(q)) ||
           c.connectionId.toLowerCase().includes(q)
       );
     }
@@ -497,6 +537,7 @@ export default function AreaHousesPage() {
               onCollect={setCollectingCustomer}
               onEdit={setEditingHouse}
               onEditAddress={setEditingAddressCustomer}
+              onEditStb={setEditingStbCustomer}
               onDelete={setDeletingCustomer}
             />
           ))
@@ -542,6 +583,22 @@ export default function AreaHousesPage() {
         isOpen={!!editingAddressCustomer}
         onClose={() => setEditingAddressCustomer(null)}
         onUpdated={handleAddressUpdated}
+      />
+
+      {/* Edit STB Modal */}
+      <EditStbModal
+        customer={editingStbCustomer}
+        isOpen={!!editingStbCustomer}
+        onClose={() => setEditingStbCustomer(null)}
+        onUpdated={(newStbId) => {
+          if (!editingStbCustomer) return;
+          setLocalCustomers((prev) =>
+            prev.map((c) =>
+              c.id === editingStbCustomer.id ? { ...c, stbId: newStbId } : c
+            )
+          );
+          setEditingStbCustomer(null);
+        }}
       />
 
       {/* Delete House Modal */}

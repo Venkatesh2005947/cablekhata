@@ -10,6 +10,7 @@ import {
   validateHouseName,
   validateHouseNumber,
   validatePhone,
+  validateStbNumber,
 } from "@/lib/validation";
 import { setLocalCache, getLocalCache } from "@/lib/cache";
 import type { Customer } from "@/types";
@@ -31,6 +32,7 @@ export default function EditHouseModal({
 }: EditHouseModalProps) {
   const [name, setName] = useState("");
   const [houseNumber, setHouseNumber] = useState("");
+  const [stbId, setStbId] = useState("");
   const [address, setAddress] = useState("");
   const [collectorNote, setCollectorNote] = useState("");
   const [phone, setPhone] = useState("");
@@ -39,12 +41,14 @@ export default function EditHouseModal({
   const [errors, setErrors] = useState<{
     name?: string;
     houseNumber?: string;
+    stbId?: string;
     address?: string;
     phone?: string;
   }>({});
   const [touched, setTouched] = useState<{
     name?: boolean;
     houseNumber?: boolean;
+    stbId?: boolean;
     address?: boolean;
     phone?: boolean;
   }>({});
@@ -55,6 +59,7 @@ export default function EditHouseModal({
     if (customer) {
       setName(customer.name || "");
       setHouseNumber(customer.houseNumber || "");
+      setStbId(customer.stbId || "");
       setAddress(customer.address || "");
       setCollectorNote(customer.collectorNote || "");
       setPhone(customer.phone === "Not Provided" ? "" : customer.phone || "");
@@ -66,12 +71,12 @@ export default function EditHouseModal({
 
   if (!isOpen || !customer) return null;
 
-  const handleBlur = (field: "name" | "houseNumber" | "address" | "phone") => {
+  const handleBlur = (field: "name" | "houseNumber" | "stbId" | "address" | "phone") => {
     setTouched((prev) => ({ ...prev, [field]: true }));
     validateField(field);
   };
 
-  const validateField = (field: "name" | "houseNumber" | "address" | "phone") => {
+  const validateField = (field: "name" | "houseNumber" | "stbId" | "address" | "phone") => {
     const nextErrors = { ...errors };
 
     if (field === "name") {
@@ -84,6 +89,12 @@ export default function EditHouseModal({
       const res = validateHouseNumber(houseNumber);
       if (!res.isValid) nextErrors.houseNumber = res.error;
       else delete nextErrors.houseNumber;
+    }
+
+    if (field === "stbId") {
+      const res = validateStbNumber(stbId);
+      if (!res.isValid) nextErrors.stbId = res.error;
+      else delete nextErrors.stbId;
     }
 
     if (field === "address") {
@@ -105,17 +116,19 @@ export default function EditHouseModal({
   const validateAll = () => {
     const nameRes = validateHouseName(name);
     const houseNoRes = validateHouseNumber(houseNumber);
+    const stbRes = validateStbNumber(stbId);
     const addressRes = validateAddress(address);
     const phoneRes = validatePhone(phone);
 
     const newErrors: typeof errors = {};
     if (!nameRes.isValid) newErrors.name = nameRes.error;
     if (!houseNoRes.isValid) newErrors.houseNumber = houseNoRes.error;
+    if (!stbRes.isValid) newErrors.stbId = stbRes.error;
     if (!addressRes.isValid) newErrors.address = addressRes.error;
     if (!phoneRes.isValid) newErrors.phone = phoneRes.error;
 
     setErrors(newErrors);
-    setTouched({ name: true, houseNumber: true, address: true, phone: true });
+    setTouched({ name: true, houseNumber: true, stbId: true, address: true, phone: true });
     return Object.keys(newErrors).length === 0;
   };
 
@@ -132,6 +145,7 @@ export default function EditHouseModal({
     try {
       const cleanDoorNo = houseNumber.trim();
       const cleanName = name.trim();
+      const cleanStb = stbId.trim();
       const cleanAddress = address.trim();
       const cleanNote = collectorNote.trim();
       const cleanPhone = phone.trim();
@@ -141,6 +155,7 @@ export default function EditHouseModal({
         ...customer,
         name: cleanName,
         houseNumber: cleanDoorNo,
+        stbId: cleanStb,
         address: cleanAddress,
         phone: cleanPhone || "Not Provided",
         monthlyFee: Number(monthlyFee) || customer.monthlyFee,
@@ -150,6 +165,7 @@ export default function EditHouseModal({
       const updatePayload = {
         name: cleanName,
         houseNumber: cleanDoorNo,
+        stbId: cleanStb,
         address: cleanAddress,
         phone: cleanPhone || "Not Provided",
         monthlyFee: Number(monthlyFee) || customer.monthlyFee,
@@ -174,6 +190,13 @@ export default function EditHouseModal({
         const cached = getLocalCache<Customer[]>(cacheKey) || [];
         const updated = cached.map((c) => (c.id === customer.id ? updatedCustomer : c));
         setLocalCache(cacheKey, updated);
+      }
+
+      // 4. Also update all-customers collectionGroup cache
+      const allCusts = getLocalCache<Customer[]>("cablekhata_customers_subcoll_v3");
+      if (allCusts && allCusts.length > 0) {
+        const updatedAll = allCusts.map((c) => (c.id === customer.id ? updatedCustomer : c));
+        setLocalCache("cablekhata_customers_subcoll_v3", updatedAll);
       }
 
       showToast({
@@ -305,6 +328,43 @@ export default function EditHouseModal({
                 </span>
               )}
             </div>
+          </div>
+
+          {/* Row 2: Set Top Box (STB) Number */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label htmlFor="edit_stb_number" className="text-label-md text-on-surface font-bold flex items-center gap-1">
+                <span>Set Top Box No (STB No)</span>
+                <span className="text-error font-extrabold">*</span>
+              </label>
+              <span className="text-label-sm text-on-surface-variant font-medium">Alphanumeric</span>
+            </div>
+            <div className="relative flex items-center">
+              <span className="material-symbols-outlined absolute left-3 text-secondary text-[18px]">
+                tv
+              </span>
+              <input
+                id="edit_stb_number"
+                type="text"
+                value={stbId}
+                onChange={(e) => {
+                  setStbId(e.target.value);
+                  if (touched.stbId) validateField("stbId");
+                }}
+                onBlur={() => handleBlur("stbId")}
+                placeholder="e.g. STB-8831 or 8831"
+                className={`w-full h-12 pl-9 pr-3 rounded-xl bg-surface-container text-on-surface font-mono text-body-md font-bold focus:outline-none transition-all ${
+                  errors.stbId && touched.stbId
+                    ? "ring-2 ring-error bg-error-container/10"
+                    : "focus:ring-2 focus:ring-primary/50"
+                }`}
+              />
+            </div>
+            {errors.stbId && touched.stbId && (
+              <span className="text-label-sm text-error font-medium px-1">
+                {errors.stbId}
+              </span>
+            )}
           </div>
 
           {/* Full Address */}
