@@ -48,22 +48,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
 
-        {/* Material Symbols: load as non-render-blocking via preload + onload swap.
-            Fixed axes only (opsz=24, wght=600, FILL=0, GRAD=0) keeps it ~60KB.
-            The <noscript> fallback ensures icons still render with JS disabled. */}
+        {/* Material Symbols: standard stylesheet with preconnect hints above.
+            Fixed axes only (opsz=24, wght=600, FILL=0, GRAD=0) keeps the CSS ~2KB
+            and the WOFF2 font file ~60KB. display=block avoids FOUT. */}
         <link
-          rel="preload"
-          as="style"
+          rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,600,0,0&display=block"
-          // @ts-expect-error — onload is valid for link[rel=preload] in browsers
-          onLoad="this.onload=null;this.rel='stylesheet'"
         />
-        <noscript>
-          <link
-            rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,600,0,0&display=block"
-          />
-        </noscript>
       </head>
       <body className={`${plusJakartaSans.className} min-h-screen flex flex-col antialiased`}>
         <AppHeader />
