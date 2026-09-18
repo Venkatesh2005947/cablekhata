@@ -9,7 +9,6 @@ import {
   validateAddress,
   validateHouseName,
   validateHouseNumber,
-  validatePhone,
   validateStbNumber,
 } from "@/lib/validation";
 import { setLocalCache, getLocalCache } from "@/lib/cache";
@@ -35,7 +34,6 @@ export default function EditHouseModal({
   const [stbId, setStbId] = useState("");
   const [address, setAddress] = useState("");
   const [collectorNote, setCollectorNote] = useState("");
-  const [phone, setPhone] = useState("");
   const [monthlyFee, setMonthlyFee] = useState<number>(250);
 
   const [errors, setErrors] = useState<{
@@ -43,14 +41,12 @@ export default function EditHouseModal({
     houseNumber?: string;
     stbId?: string;
     address?: string;
-    phone?: string;
   }>({});
   const [touched, setTouched] = useState<{
     name?: boolean;
     houseNumber?: boolean;
     stbId?: boolean;
     address?: boolean;
-    phone?: boolean;
   }>({});
 
   const [saving, setSaving] = useState(false);
@@ -62,7 +58,6 @@ export default function EditHouseModal({
       setStbId(customer.stbId || "");
       setAddress(customer.address || "");
       setCollectorNote(customer.collectorNote || "");
-      setPhone(customer.phone === "Not Provided" ? "" : customer.phone || "");
       setMonthlyFee(customer.monthlyFee || 250);
       setErrors({});
       setTouched({});
@@ -71,12 +66,12 @@ export default function EditHouseModal({
 
   if (!isOpen || !customer) return null;
 
-  const handleBlur = (field: "name" | "houseNumber" | "stbId" | "address" | "phone") => {
+  const handleBlur = (field: "name" | "houseNumber" | "stbId" | "address") => {
     setTouched((prev) => ({ ...prev, [field]: true }));
     validateField(field);
   };
 
-  const validateField = (field: "name" | "houseNumber" | "stbId" | "address" | "phone") => {
+  const validateField = (field: "name" | "houseNumber" | "stbId" | "address") => {
     const nextErrors = { ...errors };
 
     if (field === "name") {
@@ -103,12 +98,6 @@ export default function EditHouseModal({
       else delete nextErrors.address;
     }
 
-    if (field === "phone") {
-      const res = validatePhone(phone);
-      if (!res.isValid) nextErrors.phone = res.error;
-      else delete nextErrors.phone;
-    }
-
     setErrors(nextErrors);
     return nextErrors;
   };
@@ -118,17 +107,15 @@ export default function EditHouseModal({
     const houseNoRes = validateHouseNumber(houseNumber);
     const stbRes = validateStbNumber(stbId);
     const addressRes = validateAddress(address);
-    const phoneRes = validatePhone(phone);
 
     const newErrors: typeof errors = {};
     if (!nameRes.isValid) newErrors.name = nameRes.error;
     if (!houseNoRes.isValid) newErrors.houseNumber = houseNoRes.error;
     if (!stbRes.isValid) newErrors.stbId = stbRes.error;
     if (!addressRes.isValid) newErrors.address = addressRes.error;
-    if (!phoneRes.isValid) newErrors.phone = phoneRes.error;
 
     setErrors(newErrors);
-    setTouched({ name: true, houseNumber: true, stbId: true, address: true, phone: true });
+    setTouched({ name: true, houseNumber: true, stbId: true, address: true });
     return Object.keys(newErrors).length === 0;
   };
 
@@ -148,7 +135,6 @@ export default function EditHouseModal({
       const cleanStb = stbId.trim();
       const cleanAddress = address.trim();
       const cleanNote = collectorNote.trim();
-      const cleanPhone = phone.trim();
       const nowIso = new Date().toISOString();
 
       const updatedCustomer: Customer = {
@@ -157,7 +143,7 @@ export default function EditHouseModal({
         houseNumber: cleanDoorNo,
         stbId: cleanStb,
         address: cleanAddress,
-        phone: cleanPhone || "Not Provided",
+        phone: customer.phone || "Not Provided",
         monthlyFee: Number(monthlyFee) || customer.monthlyFee,
         collectorNote: cleanNote || undefined,
       };
@@ -167,7 +153,7 @@ export default function EditHouseModal({
         houseNumber: cleanDoorNo,
         stbId: cleanStb,
         address: cleanAddress,
-        phone: cleanPhone || "Not Provided",
+        phone: customer.phone || "Not Provided",
         monthlyFee: Number(monthlyFee) || customer.monthlyFee,
         collectorNote: cleanNote || null,
         updatedAt: nowIso,
@@ -401,60 +387,27 @@ export default function EditHouseModal({
             )}
           </div>
 
-          {/* Phone + Monthly Fee */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="edit_phone" className="text-label-md text-on-surface font-bold">
-                Phone Number
-              </label>
-              <div className="relative flex items-center">
-                <span className="material-symbols-outlined absolute left-3 text-outline text-[18px]">
-                  call
-                </span>
-                <input
-                  id="edit_phone"
-                  type="tel"
-                  maxLength={10}
-                  value={phone}
-                  onChange={(e) => {
-                    const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
-                    setPhone(cleaned);
-                    if (touched.phone) validateField("phone");
-                  }}
-                  onBlur={() => handleBlur("phone")}
-                  placeholder="e.g. 9876543210"
-                  className={`w-full h-12 pl-9 pr-3 rounded-xl bg-surface-container text-on-surface text-body-md focus:outline-none transition-all ${
-                    errors.phone && touched.phone
-                      ? "ring-2 ring-error bg-error-container/10"
-                      : "focus:ring-2 focus:ring-primary/50"
-                  }`}
-                />
-              </div>
-              {errors.phone && touched.phone && (
-                <span className="text-label-sm text-error font-medium px-1">
-                  {errors.phone}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1">
+          {/* Monthly Fee */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
               <label htmlFor="edit_fee" className="text-label-md text-on-surface font-bold">
                 Monthly Fee (₹)
               </label>
-              <div className="relative flex items-center">
-                <span className="absolute left-3.5 text-currency-display text-primary font-bold text-headline-sm">
-                  ₹
-                </span>
-                <input
-                  id="edit_fee"
-                  type="number"
-                  min="0"
-                  step="10"
-                  value={monthlyFee}
-                  onChange={(e) => setMonthlyFee(Number(e.target.value))}
-                  className="w-full h-12 pl-8 pr-3 rounded-xl bg-surface-container text-on-surface text-headline-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
+              <span className="text-label-sm text-primary font-bold">Collection Plan</span>
+            </div>
+            <div className="relative flex items-center">
+              <span className="absolute left-3.5 text-currency-display text-primary font-bold text-headline-sm">
+                ₹
+              </span>
+              <input
+                id="edit_fee"
+                type="number"
+                min="0"
+                step="10"
+                value={monthlyFee}
+                onChange={(e) => setMonthlyFee(Number(e.target.value))}
+                className="w-full h-12 pl-8 pr-3 rounded-xl bg-surface-container text-on-surface text-headline-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
             </div>
           </div>
 

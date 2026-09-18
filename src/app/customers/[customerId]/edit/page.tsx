@@ -21,7 +21,6 @@ export default function EditCustomerPage() {
 
   // Form state
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [areaId, setAreaId] = useState("");
   const [fee, setFee] = useState(250);
@@ -36,7 +35,6 @@ export default function EditCustomerPage() {
         const c = { id: snap.id, ...snap.data() } as Customer;
         setCustomer(c);
         setName(c.name);
-        setPhone(c.phone);
         setAddress(c.address);
         setAreaId(c.areaId);
         setFee(c.monthlyFee);
@@ -66,7 +64,6 @@ export default function EditCustomerPage() {
     try {
       const nowIso = new Date().toISOString();
       const cleanName = name.trim();
-      const cleanPhone = phone.trim();
       const cleanAddress = address.trim();
       const cleanStb = stbId.trim();
       const cleanConn = connectionId.trim();
@@ -74,7 +71,7 @@ export default function EditCustomerPage() {
 
       const updatePayload = {
         name: cleanName,
-        phone: cleanPhone || "Not Provided",
+        phone: customer?.phone || "Not Provided",
         address: cleanAddress,
         monthlyFee: Number(fee) || 250,
         stbId: cleanStb,
@@ -200,20 +197,7 @@ export default function EditCustomerPage() {
             </div>
           </div>
 
-          {/* Phone */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="phone" className="text-label-lg text-on-surface">Phone Number</label>
-            <div className="relative flex items-center">
-              <span className="material-symbols-outlined absolute left-3.5 text-outline text-[20px]">call</span>
-              <input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full h-12 pl-11 pr-4 bg-surface-container-lowest text-on-surface text-body-lg rounded-xl shadow-card focus:outline-none focus:bg-surface-container-low transition-all"
-              />
-            </div>
-          </div>
+
 
           {/* Full Address */}
           <div className="bg-surface-container-lowest rounded-xl p-4 shadow-card flex flex-col gap-2">

@@ -135,21 +135,14 @@ function HouseCard({
         </div>
       )}
 
-      {/* Middle row: phone + paid info or balance */}
+      {/* Middle row: payment status & balance info */}
       {isPaid ? (
         <div className="flex items-center justify-between text-body-sm text-on-surface-variant pt-0.5">
-          {customer.phone && customer.phone !== "Not Provided" ? (
-            <a
-              href={`tel:${customer.phone}`}
-              className="inline-flex items-center gap-1 text-primary text-label-md active:opacity-75"
-            >
-              <span className="material-symbols-outlined text-[18px]">call</span>
-              <span>{customer.phone}</span>
-            </a>
-          ) : (
-            <span className="text-label-sm text-outline">No phone provided</span>
-          )}
-          <span className="text-label-sm text-outline font-medium">Paid this month</span>
+          <span className="inline-flex items-center gap-1.5 text-primary text-label-md font-bold">
+            <span className="material-symbols-outlined text-[18px]">verified</span>
+            <span>Monthly Fee Paid</span>
+          </span>
+          <span className="text-label-sm text-outline font-semibold">Cleared</span>
         </div>
       ) : isPartial ? (
         <div className="p-2.5 rounded-lg bg-surface-container-low flex items-center justify-between">
@@ -157,15 +150,7 @@ function HouseCard({
             <span className="text-label-sm text-primary font-bold">
               Paid: ₹{customer.monthlyFee - Math.round(customer.monthlyFee * 0.4)}
             </span>
-            {customer.phone && customer.phone !== "Not Provided" && (
-              <a
-                href={`tel:${customer.phone}`}
-                className="text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5"
-              >
-                <span className="material-symbols-outlined text-[14px]">call</span>
-                {customer.phone}
-              </a>
-            )}
+            <span className="text-[11px] text-on-surface-variant">Partial payment</span>
           </div>
           <div className="text-right">
             <span className="text-label-sm text-secondary font-bold uppercase">Remaining</span>
@@ -176,17 +161,10 @@ function HouseCard({
         </div>
       ) : (
         <div className="flex items-center justify-between pt-0.5">
-          {customer.phone && customer.phone !== "Not Provided" ? (
-            <a
-              href={`tel:${customer.phone}`}
-              className="h-9 px-2.5 rounded-lg bg-surface-container text-on-surface text-label-md inline-flex items-center gap-1.5"
-            >
-              <span className="material-symbols-outlined text-[16px] text-primary">call</span>
-              <span>{customer.phone}</span>
-            </a>
-          ) : (
-            <span className="text-label-sm text-outline">No phone</span>
-          )}
+          <div className="flex items-center gap-1.5 text-on-surface-variant">
+            <span className="material-symbols-outlined text-[18px] text-error">pending_actions</span>
+            <span className="text-label-md font-semibold text-on-surface">Payment Pending</span>
+          </div>
           <div className="text-right">
             <span className="text-label-sm text-error font-bold uppercase">Balance Due</span>
             <div className="text-headline-md text-error leading-tight font-bold">
@@ -445,7 +423,7 @@ export default function AreaHousesPage() {
             enterKeyHint="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search house no, customer name, address, phone..."
+            placeholder="Search house no, customer name, address, STB..."
             className="w-full h-12 pl-11 pr-11 rounded-xl bg-surface-container-lowest text-on-surface placeholder:text-outline text-body-md shadow-card focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <button
