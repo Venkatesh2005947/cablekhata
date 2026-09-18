@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAreas } from "@/hooks/useAreas";
 import ProgressBar from "@/components/ui/ProgressBar";
 import QuickCollectModal from "@/components/payment/QuickCollectModal";
+import AddAreaModal from "@/components/area/AddAreaModal";
 import type { AreaWithStats } from "@/types";
 
 // ─── Today's Collection Summary Tile ─────────────────────────────────
@@ -180,6 +181,7 @@ export default function AreasPage() {
   const { areas, loading, error } = useAreas();
   const [search, setSearch] = useState("");
   const [showQuickCollect, setShowQuickCollect] = useState(false);
+  const [showAddArea, setShowAddArea] = useState(false);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return areas;
@@ -249,13 +251,14 @@ export default function AreasPage() {
             <span className="material-symbols-outlined text-[22px]">qr_code_scanner</span>
             <span>Quick Collect</span>
           </button>
-          <Link
-            href="/manage/areas"
+          <button
+            type="button"
+            onClick={() => setShowAddArea(true)}
             className="min-h-[52px] px-3 rounded-xl bg-surface-container-high text-on-surface text-label-lg font-bold shadow-card flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
           >
             <span className="material-symbols-outlined text-primary text-[22px]">add_location_alt</span>
             <span>+ Add Area</span>
-          </Link>
+          </button>
         </div>
 
         {/* Section heading */}
@@ -334,6 +337,13 @@ export default function AreasPage() {
       <QuickCollectModal
         isOpen={showQuickCollect}
         onClose={() => setShowQuickCollect(false)}
+      />
+
+      {/* Add Area Modal */}
+      <AddAreaModal
+        isOpen={showAddArea}
+        onClose={() => setShowAddArea(false)}
+        nextWalkOrder={areas.length + 1}
       />
     </div>
   );

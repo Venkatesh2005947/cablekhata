@@ -146,3 +146,24 @@ export function validateStbNumber(stbId: string): ValidationResult {
 
   return { isValid: true };
 }
+
+/**
+ * Validates Collection Area Name.
+ */
+export function validateAreaName(name: string): ValidationResult {
+  const trimmed = (name || "").trim();
+
+  if (!trimmed) {
+    return { isValid: false, error: "Area / Landmark Name is required" };
+  }
+
+  if (trimmed.length < 2) {
+    return { isValid: false, error: "Area Name must be at least 2 characters" };
+  }
+
+  if (trimmed.length > 50) {
+    return { isValid: false, error: "Area Name is too long (max 50 characters)" };
+  }
+
+  return { isValid: true };
+}
