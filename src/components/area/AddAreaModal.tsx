@@ -18,17 +18,6 @@ interface AddAreaModalProps {
 
 const FEE_PRESETS = [200, 250, 300, 350];
 
-const AREA_ICONS = [
-  { icon: "location_on", label: "Location" },
-  { icon: "hotel", label: "Hotel" },
-  { icon: "directions_bus", label: "Bus Stand" },
-  { icon: "temple_hindu", label: "Temple" },
-  { icon: "train", label: "Railway" },
-  { icon: "storefront", label: "Bazar" },
-  { icon: "home", label: "Street" },
-  { icon: "apartment", label: "Quarters" },
-];
-
 export default function AddAreaModal({
   isOpen,
   onClose,
@@ -38,7 +27,6 @@ export default function AddAreaModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [defaultMonthlyFee, setDefaultMonthlyFee] = useState(250);
-  const [selectedIcon, setSelectedIcon] = useState("location_on");
 
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
@@ -90,7 +78,7 @@ export default function AddAreaModal({
         id: areaId,
         name: cleanName,
         description: cleanDesc || "Door-to-door collection route",
-        icon: selectedIcon,
+        icon: "location_on",
         walkOrder: nextWalkOrder,
         defaultMonthlyFee: Number(defaultMonthlyFee) || 250,
         createdAt: nowIso,
@@ -129,7 +117,6 @@ export default function AddAreaModal({
       setName("");
       setDescription("");
       setDefaultMonthlyFee(250);
-      setSelectedIcon("location_on");
       setError(null);
       setTouched(false);
       onClose();
@@ -282,36 +269,7 @@ export default function AddAreaModal({
             </div>
           </div>
 
-          {/* Area Icon Picker */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-bold text-on-surface">
-              Area Icon Marker
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {AREA_ICONS.map((item) => {
-                const isSelected = selectedIcon === item.icon;
-                return (
-                  <button
-                    key={item.icon}
-                    type="button"
-                    onClick={() => setSelectedIcon(item.icon)}
-                    className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-all ${
-                      isSelected
-                        ? "border-primary bg-primary/10 text-primary shadow-xs"
-                        : "border-surface-container bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[24px]">
-                      {item.icon}
-                    </span>
-                    <span className="text-[11px] font-bold truncate max-w-full">
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-container mt-1">
